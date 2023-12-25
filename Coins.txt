@@ -1,0 +1,7 @@
+cents ¢
+5
+Eagle 1000¢
+Dollar 100¢
+Quarter 25¢
+Dime 10¢
+Cent 1¢
