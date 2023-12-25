@@ -42,97 +42,89 @@ int calculateChangeGreedy(vector<int>& coinValues, vector<string>& coinNames, in
         cout << item.first << " " << coinNames[item.second] << endl;
     return count;
 }
-int calculateChangeDP(vector<int>& coins, int T, vector<string>& coinNames) {
-    int n = coins.size();
-
-    vector<vector<int>> dp(n, vector<int>(T + 1, 0));
-    reverse(coins.begin(), coins.end());
-    reverse(coinNames.begin(), coinNames.end());
-    for (int i = 0; i <= T; i++) {
-        if (i % coins[0] == 0)
-            dp[0][i] = i / coins[0];
-        else
-            dp[0][i] = 1e9;
-    }
-
-    for (int ind = 1; ind < n; ind++) {
-        for (int target = 0; target <= T; target++) {
-            int notTake = dp[ind - 1][target];
-
-            int take = 1e9;
-            if (coins[ind] <= target && dp[ind][target - coins[ind]] != 1e9)
-                take = 1 + dp[ind][target - coins[ind]];
-
-            dp[ind][target] = min(notTake, take);
-        }
-    }
-
-    int ans = dp[n - 1][T];
-
-    if (ans >= 1e9)
-        return -1;
-
-    vector<int> coinCounts(n, 0);
-    int remainingAmount = T;
-    for (int i = n - 1; i >= 0; i--) {
-        while (remainingAmount >= coins[i] && dp[i][remainingAmount] == dp[i][remainingAmount - coins[i]] + 1) {
-            coinCounts[i]++;
-            remainingAmount -= coins[i];
-        }
-    }
-
-    for (int i = 0; i < n; i++) {
-        if (coinCounts[i] != 0) {
-            cout << coinCounts[i] << " " << coinNames[i];
-            if (coinCounts[i] > 1)
+void displayUsedDenominations(const vector<int>& counts, const vector<string>& names) {
+    cout << "Denominations used are:" << endl;
+    for (size_t i = 0; i < counts.size(); i++) {
+        if (counts[i] > 0) {
+            cout << counts[i] << " " << names[i];
+            if (counts[i] > 1)
                 cout << "s";
             cout << endl;
         }
     }
+}
 
-    return ans;
+int calculateChangeDP(const vector<int>& denominations, int targetAmount, const vector<string>& denominationNames) {
+    vector<int> dp(targetAmount + 1, INT_MAX);
+    dp[0] = 0;
+
+    for (int i = 1; i <= targetAmount; i++) {
+        for (int den : denominations) {
+            if (i >= den && dp[i - den] != INT_MAX) {
+                dp[i] = min(dp[i], 1 + dp[i - den]);
+            }
+        }
+    }
+
+    if (dp[targetAmount] == INT_MAX)
+        return -1;
+
+    vector<int> coinsUsed(denominations.size(), 0);
+    int amountRemaining = targetAmount;
+    while (amountRemaining > 0) {
+        for (size_t i = 0; i < denominations.size(); i++) {
+            if (amountRemaining >= denominations[i] && dp[amountRemaining] == 1 + dp[amountRemaining - denominations[i]]) {
+                coinsUsed[i]++;
+                amountRemaining -= denominations[i];
+                break;
+            }
+        }
+    }
+
+    displayUsedDenominations(coinsUsed, denominationNames);
+    return dp[targetAmount];
 }
 
 
-    int main() {
-        ifstream inputFile;
-        inputFile.open("Coins.txt");
+int main() {
+    ifstream inputFile;
+    inputFile.open("Coins.txt");
 
-        if (inputFile) {
-            string currencyName, symbol, coinName;
-            int numOfCoins;
-            float targetAmount;
-            inputFile >> currencyName;
-            inputFile >> symbol;
-            inputFile >> numOfCoins;
-            vector<int> coinValues;
-            vector<string> coinNames;
+    if (inputFile) {
+        string currencyName, symbol, coinName;
+        int numOfCoins;
+        float targetAmount;
+        inputFile >> currencyName;
+        inputFile >> symbol;
+        inputFile >> numOfCoins;
+        vector<int> coinValues;
+        vector<string> coinNames;
 
-            for (int i = 0; i < numOfCoins; i++) {
-                inputFile >> coinName;
-                float value;
-                inputFile >> value;
-                coinValues.push_back(value);
-                coinNames.push_back(coinName);
-                inputFile >> coinName;
-            }
-            cout << "Enter the value for which coin-change is required in " << currencyName << " : ";
-            cin >> targetAmount;
-            int minCoins = 0;
-            if (!possibleWithGreedy(coinValues)) {
-                minCoins = calculateChangeDP(coinValues, targetAmount, coinNames);
-            }
-            else {
-                minCoins = calculateChangeGreedy(coinValues, coinNames, numOfCoins, targetAmount);
-            }
-
-            if (minCoins == -1) {
-                cout << "No solution exists." << endl;
-            }
-            else {
-                cout << "\nMinimum number of coins needed: " << minCoins << endl;
-            }
+        for (int i = 0; i < numOfCoins; i++) {
+            inputFile >> coinName;
+            float value;
+            inputFile >> value;
+            coinValues.push_back(value);
+            coinNames.push_back(coinName);
+            inputFile >> coinName;
+        }
+        cout << "Enter the value for which coin-change is required in " << currencyName << " : ";
+        cin >> targetAmount;
+        int minCoins = 0;
+        if (!possibleWithGreedy(coinValues)) {
+            minCoins = calculateChangeDP(coinValues, targetAmount, coinNames);
+        }
+        else {
+            minCoins = calculateChangeGreedy(coinValues, coinNames, numOfCoins, targetAmount);
         }
 
-        return 0;
+        if (minCoins == -1) {
+            cout << "No solution exists." << endl;
+        }
+        else {
+            cout << "\nMinimum number of coins needed: " << minCoins << endl;
+        }
     }
+
+    return 0;
+}
